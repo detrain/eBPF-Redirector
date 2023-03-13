@@ -1,1 +1,4 @@
-src/ebpf_redirector.o
+/ebpf-redirector/.output
+/ebpf-redirector/minimal
+/ebpf-redirector/tc
+/ebpf-redirector/xdp
