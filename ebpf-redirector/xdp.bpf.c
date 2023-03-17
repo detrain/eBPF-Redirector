@@ -15,19 +15,36 @@
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
 
+// Redirection Ethernet addresses
+struct eth_addrs
+{
+    __u8 atk[ETH_ALEN];
+    __u8 srv[ETH_ALEN];
+    __u8 tgt[ETH_ALEN];
+}
+
+// Redirection IP addresses
+struct ip_redir
+{
+    __be32 atk;
+    __be32 srv;
+    __be32 tgt;
+}
+
+
 SEC("xdp_redirect")
 int xdp_redirector(struct xdp_md *ctx)
 {
     void* data = (void*)(long) ctx->data;
     void* dataEnd = (void*)(long) ctx->data_end;
 
-	struct Cursor dataCursor; // Track start of each layer as its processed
+	void* dataCursor; // Track start of each layer as its processed
     
     struct ethhdr *ethernetHeader;
     struct iphdr *ipv4Header;
     struct icmphdr *icmpHeader;
 
-    dataCursor.position = data;
+    dataCursor = data;
 
     int headerType; // Track type of the header, e.g. IPv4, ICMP, ICMP-Type 0
     int action = XDP_PASS;
@@ -38,19 +55,20 @@ int xdp_redirector(struct xdp_md *ctx)
 		goto xdp_action;
 
     headerType = parse_ipv4hdr(&dataCursor, dataEnd, &ipv4Header);
-    bpf_printk("Type = %04X", bpf_ntohs(headerType));
    
-    if ( bpf_ntohs(headerType) != IPPROTO_ICMP )
+    if ( headerType != IPPROTO_ICMP )
         goto xdp_action;
 
     headerType = parse_icmphdr(&dataCursor, dataEnd, &icmpHeader);
+    bpf_printk("Type = %04X", headerType);
 
-    if ( bpf_ntohs(headerType) != ICMP_ECHO)
+    if ( headerType != ICMP_ECHO)
         goto xdp_action;
+    
+    bpf_printk("REACHED ICMP");
 
     if ( bpf_ntohs(icmpHeader->un.echo.sequence) % 2 == 0 )
     {
-        // swap_mac_addrs(ethernetHeader);
         action = XDP_DROP;
     }
 

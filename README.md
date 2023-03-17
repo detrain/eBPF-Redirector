@@ -2,13 +2,21 @@
 An XDP program to redirect traffic
 
 ## Useful Commands
+Reference to some commands for the project
 
-### `bpftool` Commands:
+### `bpf_printk()` Pipe
+```
+# Acquire debug output from trace_pipe
+cat /sys/kernel/debug/tracing/trace_pipe
 ```
 
+### `bpftool` Commands
+```
+# Shows all loaded xdp programs
+sudo bpftool prog show | grep "xdp" -A 2
 ```
 
-### `ip` Commands:
+### `ip` Commands
 
 ```
 # Load the "xdp" section to a device
@@ -22,10 +30,23 @@ sudo ip link set dev lo xdpgeneric off
 ```
 *Good for plug and play smaller programs, but does not support eBPF maps*
 
-## Dependencies
-`Ubuntu 22.04.1 LTS 86_64`
+### `llvm-dump` Commands
 ```
-$ sudo apt install clang-14 llvm-14-tools llvm-14-dev libelf1 libelf-dev zlib1g-dev libbpf-dev
+# Dump the section from the object file
+llvm-dump -S <file.o> --section=<section>
 ```
 
-[bpf_tool](https://github.com/libbpf/bpftool)
+### `netperf` Commands
+```
+netperf -host <forwarderIP> -port <forwarderPort> -testname <testname> -testlen <sec> 
+```
+
+## Dependencies
+Tested and developed on
+```
+Ubuntu 22.04.1 LTS x86_64
+```
+Relevant packages
+```
+$ sudo apt install clang llvm-dev libelf1 libelf-dev zlib1g-dev libbpf-dev
+```

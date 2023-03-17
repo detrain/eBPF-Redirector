@@ -7,12 +7,7 @@ BPFTOOL_SRC := $(abspath ../bpftool/src)
 LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
 BPFTOOL_OUTPUT ?= $(abspath $(OUTPUT)/bpftool)
 BPFTOOL ?= $(BPFTOOL_OUTPUT)/bootstrap/bpftool
-ARCH ?= $(shell uname -m | sed 's/x86_64/x86/' \
-			 | sed 's/aarch64/arm64/' \
-			 | sed 's/ppc64le/powerpc/' \
-			 | sed 's/mips.*/mips/' \
-			 | sed 's/arm.*/arm/' \
-			 | sed 's/riscv64/riscv/')
+ARCH ?= $(shell uname -m | sed 's/x86_64/x86/')
 VMLINUX := ../vmlinux/$(ARCH)/vmlinux.h
 # Use our own libbpf API headers and Linux UAPI headers distributed with
 # libbpf to avoid dependency on system-wide headers, which could be missing or
