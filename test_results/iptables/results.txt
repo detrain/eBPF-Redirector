@@ -1,0 +1,65 @@
+# iptables
+
+# Process List
+iptables is a kernel module `lsmod | grep iptables` So it will not show up in the process list
+
+# Socket Table
+The connections are tracked via conntrack when redirecting with a masquerade. These connections will not show up in the socket table.
+
+# rsyslog
+iptables log rule
+```
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+   33  1781 LOG        tcp  --  *      *       10.0.2.4             0.0.0.0/0            LOG flags 0 level 4 prefix "Gotcha"
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 LOG        tcp  --  *      *       10.0.2.4             0.0.0.0/0            LOG flags 0 level 4 prefix "Gotcha"
+```
+
+/var/log/iptables.log
+```
+Apr  7 08:47:55 research kernel: [71942.180424] GotchaIN=enp0s3 OUT=enp0s3 MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.5 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=12015 DF PROTO=TCP SPT=39272 DPT=80 WINDOW=64240 RES=0x00 SYN URGP=0
+Apr  7 08:47:55 research kernel: [71942.181054] GotchaIN=enp0s3 OUT=enp0s3 MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.5 LEN=52 TOS=0x00 PREC=0x00 TTL=63 ID=12016 DF PROTO=TCP SPT=39272 DPT=80 WINDOW=502 RES=0x00 ACK URGP=0
+Apr  7 08:47:55 research kernel: [71942.187396] GotchaIN=enp0s3 OUT=enp0s3 MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.5 LEN=52 TOS=0x00 PREC=0x00 TTL=63 ID=12017 DF PROTO=TCP SPT=39272 DPT=80 WINDOW=502 RES=0x00 ACK URGP=0
+Apr  7 08:47:55 research kernel: [71942.187425] GotchaIN=enp0s3 OUT=enp0s3 MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.5 LEN=52 TOS=0x00 PREC=0x00 TTL=63 ID=12018 DF PROTO=TCP SPT=39272 DPT=80 WINDOW=502 RES=0x00 ACK FIN URGP=0
+```
+
+# tcpdump
+```
+@research:~$ sudo tcpdump -envvvi enp0s3 tcp port 80 or tcp port 8080
+tcpdump: listening on enp0s3, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+08:47:55.751049 08:00:27:c7:e1:36 > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 64, id 12015, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.4.39272 > 10.0.2.15.8080: Flags [S], cksum 0x093e (correct), seq 608609569, win 64240, options [mss 1460,sackOK,TS val 24684518 ecr 0,nop,wscale 7], length 0
+08:47:55.751127 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 63, id 12015, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.15.39272 > 10.0.2.5.80: Flags [S], cksum 0x287d (correct), seq 608609569, win 64240, options [mss 1460,sackOK,TS val 24684518 ecr 0,nop,wscale 7], length 0
+08:47:55.751461 08:00:27:10:cb:4e > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.5.80 > 10.0.2.15.39272: Flags [S.], cksum 0x42e0 (correct), seq 3038226357, ack 608609570, win 65160, options [mss 1460,sackOK,TS val 203192586 ecr 24684518,nop,wscale 7], length 0
+08:47:55.751470 08:00:27:1c:d1:63 > 08:00:27:c7:e1:36, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 63, id 0, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.15.8080 > 10.0.2.4.39272: Flags [S.], cksum 0x23a1 (correct), seq 3038226357, ack 608609570, win 65160, options [mss 1460,sackOK,TS val 203192586 ecr 24684518,nop,wscale 7], length 0
+08:47:55.751714 08:00:27:c7:e1:36 > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 12016, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.4.39272 > 10.0.2.15.8080: Flags [.], cksum 0x4eff (correct), seq 1, ack 1, win 502, options [nop,nop,TS val 24684519 ecr 203192586], length 0
+08:47:55.751747 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 63, id 12016, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.39272 > 10.0.2.5.80: Flags [.], cksum 0x6e3e (correct), seq 1, ack 1, win 502, options [nop,nop,TS val 24684519 ecr 203192586], length 0
+08:47:55.757728 08:00:27:10:cb:4e > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 105: (tos 0x0, ttl 64, id 15015, offset 0, flags [DF], proto TCP (6), length 91)
+    10.0.2.5.80 > 10.0.2.15.39272: Flags [P.], cksum 0xb08d (correct), seq 1:40, ack 1, win 510, options [nop,nop,TS val 203192592 ecr 24684519], length 39: HTTP
+08:47:55.757729 08:00:27:10:cb:4e > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 15016, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.5.80 > 10.0.2.15.39272: Flags [F.], cksum 0x6e08 (correct), seq 40, ack 1, win 510, options [nop,nop,TS val 203192592 ecr 24684519], length 0
+08:47:55.757761 08:00:27:1c:d1:63 > 08:00:27:c7:e1:36, ethertype IPv4 (0x0800), length 105: (tos 0x0, ttl 63, id 15015, offset 0, flags [DF], proto TCP (6), length 91)
+    10.0.2.15.8080 > 10.0.2.4.39272: Flags [P.], cksum 0x914e (correct), seq 1:40, ack 1, win 510, options [nop,nop,TS val 203192592 ecr 24684519], length 39: HTTP
+08:47:55.757776 08:00:27:1c:d1:63 > 08:00:27:c7:e1:36, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 63, id 15016, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.8080 > 10.0.2.4.39272: Flags [F.], cksum 0x4ec9 (correct), seq 40, ack 1, win 510, options [nop,nop,TS val 203192592 ecr 24684519], length 0
+08:47:55.758049 08:00:27:c7:e1:36 > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 12017, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.4.39272 > 10.0.2.15.8080: Flags [.], cksum 0x4ecc (correct), seq 1, ack 40, win 502, options [nop,nop,TS val 24684525 ecr 203192592], length 0
+08:47:55.758051 08:00:27:c7:e1:36 > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 12018, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.4.39272 > 10.0.2.15.8080: Flags [F.], cksum 0x4ec9 (correct), seq 1, ack 41, win 502, options [nop,nop,TS val 24684526 ecr 203192592], length 0
+08:47:55.758091 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 63, id 12017, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.39272 > 10.0.2.5.80: Flags [.], cksum 0x6e0b (correct), seq 1, ack 40, win 502, options [nop,nop,TS val 24684525 ecr 203192592], length 0
+08:47:55.758112 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 63, id 12018, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.39272 > 10.0.2.5.80: Flags [F.], cksum 0x6e08 (correct), seq 1, ack 41, win 502, options [nop,nop,TS val 24684526 ecr 203192592], length 0
+08:47:55.758369 08:00:27:10:cb:4e > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 15017, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.5.80 > 10.0.2.15.39272: Flags [.], cksum 0x6e00 (correct), seq 41, ack 2, win 510, options [nop,nop,TS val 203192592 ecr 24684526], length 0
+08:47:55.758392 08:00:27:1c:d1:63 > 08:00:27:c7:e1:36, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 63, id 15017, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.8080 > 10.0.2.4.39272: Flags [.], cksum 0x4ec1 (correct), seq 41, ack 2, win 510, options [nop,nop,TS val 203192592 ecr 24684526], length 0
+```

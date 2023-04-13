@@ -1,0 +1,25 @@
+# xdp redirector
+
+# Process List
+Don't see it in the process list. The program is loaded into the eBPF VM and gets associated with an interface. You can use `ip link` to show loaded programs on an interface.
+
+# Socket Table
+Don't see it as there isn't any "connections" associated with redirecting at such a low level. Similar to how iptables redirected traffic, but XDP sits even lower and forces the developer to create the mapping.
+
+# rsyslog
+iptables log rule
+```
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+   33  1781 LOG        tcp  --  *      *       10.0.2.4             0.0.0.0/0            LOG flags 0 level 4 prefix "Gotcha"
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 LOG        tcp  --  *      *       10.0.2.4             0.0.0.0/0            LOG flags 0 level 4 prefix "Gotcha"
+```
+
+/var/log/iptables.log
+Don't have any logs associated with the connection details, see next tcpdump explanation.
+
+# tcpdump
+Don't see any traffic here because XDP sits at a lower point than what tcpdump sees. Need xdpdump to view traffic being handled at the same level an xdp program handles traffic.

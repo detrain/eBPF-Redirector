@@ -62,20 +62,23 @@ static __always_inline int parse_ipv4hdr(void** dataCursor, void *dataEnd, struc
 /*
 * Description: Parses TCP header
 * Parameters: ptr struct, ptr end of data, ptr empty tcphdr
-* Returns: `int`, tcp header size
+* Returns: `int`, tcp dest port
 */
 static __always_inline int parse_tcphdr(void** dataCursor, void *data_end, struct tcphdr **tcphdr)
 {
 	struct tcphdr *tcpHeader = *dataCursor;
 	int hdrsize;
 
-	if ( *dataCursor + 1 > data_end)
-		return -1;
-
+	if ( tcpHeader + 1 > data_end)
+		return EXIT_FAILURE;
+	
 	hdrsize = tcpHeader->doff * 4;
 
+	if ( hdrsize < sizeof(*tcpHeader) )
+		return EXIT_FAILURE;
+
 	if ( *dataCursor + hdrsize > data_end)
-		return -1;
+		return EXIT_FAILURE;
 
 	*dataCursor += hdrsize;
 	*tcphdr = tcpHeader;
@@ -88,24 +91,25 @@ static __always_inline int parse_tcphdr(void** dataCursor, void *data_end, struc
 * Parameters: ptr struct, ptr end of data, ptr empty udphdr
 * Returns: `int`, udp datagram size (including header)
 */
-static __always_inline int parse_udphdr(void** dataCursor, void *data_end, struct udphdr **udpHeader)
-{
-	struct udphdr *udpHeader = *dataCursor;
-	int len;
+// WARNING NOT TESTED
+// static __always_inline int parse_udphdr(void** dataCursor, void *data_end, struct udphdr **udphdr)
+// {
+// 	struct udphdr *udpHeader = *dataCursor;
+// 	int len;
 
-	if ( *dataCursor + 32 > data_end)
-		return -1;
+// 	if ( udpHeader + 1 > data_end)
+// 		return -1;
 
-	len = udpHeader->len;
+// 	len = udpHeader->len;
 
-	if ( *dataCursor + len > data_end)
-		return -1;
+// 	if ( *dataCursor + len > data_end)
+// 		return -1;
 
-	*dataCursor += len;
-	*tcphdr = tcpHeader;
+// 	*dataCursor += len;
+// 	*udphdr = udpHeader;
 
-	return len;
-}
+// 	return len;
+// }
 
 /*
 * Description: Parses ICMP header

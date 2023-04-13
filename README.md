@@ -20,13 +20,13 @@ sudo bpftool prog show | grep "xdp" -A 2
 
 ```
 # Load the "xdp" section to a device
-sudo ip link set dev lo xdpgeneric obj ebpf-redirector.o sec xdp
+ip link set dev lo xdpgeneric obj ebpf-redirector.o sec xdp
 
 # Show device info (include XDP information)
-sudo ip link show dev lo
+ip link show dev lo
 
 # Remove the XDP program from device
-sudo ip link set dev lo xdpgeneric off 
+ip link set dev lo xdpgeneric off 
 ```
 *Good for plug and play smaller programs, but does not support eBPF maps*
 

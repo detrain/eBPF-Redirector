@@ -1,0 +1,71 @@
+# Netcat
+
+# Process List
+`ps -efH`
+```
+dev	9212       1  0 13:38 pts/2    00:00:00   /usr/bin/nc -k -l 8080
+dev	9213       1  0 13:38 pts/2    00:00:00   /usr/bin/nc 10.0.2.5 80
+```
+
+# Socket Table
+`ss -pant`
+```
+LISTEN      0       1                0.0.0.0:8080           0.0.0.0:*       users:(("nc",pid=9212,fd=3))     
+ESTAB       0       0              10.0.2.15:8080          10.0.2.4:35956   users:(("nc",pid=9212,fd=4))     
+CLOSE-WAIT  0       0              10.0.2.15:45474         10.0.2.5:80      users:(("nc",pid=9213,fd=3))     
+```
+
+# rsyslog
+iptables log rule
+```
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+   33  1781 LOG        tcp  --  *      *       10.0.2.4             0.0.0.0/0            LOG flags 0 level 4 prefix "Gotcha"
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 LOG        tcp  --  *      *       10.0.2.4             0.0.0.0/0            LOG flags 0 level 4 prefix "Gotcha"
+```
+
+/var/log/iptables.log
+```
+Apr  6 13:59:56 research kernel: [ 4263.863570] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=60 TOS=0x00 PREC=0x00 TTL=64 ID=52495 DF PROTO=TCP SPT=50118 DPT=8080 WINDOW=64240 RES=0x00 SYN URGP=0 
+Apr  6 13:59:56 research kernel: [ 4263.863794] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=52 TOS=0x00 PREC=0x00 TTL=64 ID=52496 DF PROTO=TCP SPT=50118 DPT=8080 WINDOW=502 RES=0x00 ACK URGP=0 
+Apr  6 13:59:56 research kernel: [ 4263.864149] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=52 TOS=0x00 PREC=0x00 TTL=64 ID=52497 DF PROTO=TCP SPT=50118 DPT=8080 WINDOW=502 RES=0x00 ACK URGP=0
+```
+
+# tcpdump
+```
+@research:~$ sudo tcpdump -envvvi enp0s3 tcp port 80 or tcp port 8080
+tcpdump: listening on enp0s3, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+21:47:10.761240 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 64, id 5320, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.15.50458 > 10.0.2.5.80: Flags [S], cksum 0x1842 (incorrect -> 0x9ebf), seq 3465001344, win 64240, options [mss 1460,sackOK,TS val 3540415938 ecr 0,nop,wscale 7], length 0
+21:47:10.761590 08:00:27:10:cb:4e > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.5.80 > 10.0.2.15.50458: Flags [S.], cksum 0x1362 (correct), seq 3293130540, ack 3465001345, win 65160, options [mss 1460,sackOK,TS val 163547775 ecr 3540415938,nop,wscale 7], length 0
+21:47:10.761649 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 5321, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.50458 > 10.0.2.5.80: Flags [.], cksum 0x183a (incorrect -> 0x3ec1), seq 1, ack 1, win 502, options [nop,nop,TS val 3540415938 ecr 163547775], length 0
+21:47:10.771136 08:00:27:10:cb:4e > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 105: (tos 0x0, ttl 64, id 43749, offset 0, flags [DF], proto TCP (6), length 91)
+    10.0.2.5.80 > 10.0.2.15.50458: Flags [P.], cksum 0x810c (correct), seq 1:40, ack 1, win 510, options [nop,nop,TS val 163547785 ecr 3540415938], length 39: HTTP
+21:47:10.771137 08:00:27:10:cb:4e > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 43750, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.5.80 > 10.0.2.15.50458: Flags [F.], cksum 0x3e87 (correct), seq 40, ack 1, win 510, options [nop,nop,TS val 163547785 ecr 3540415938], length 0
+21:47:10.771203 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 5322, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.50458 > 10.0.2.5.80: Flags [.], cksum 0x183a (incorrect -> 0x3e86), seq 1, ack 40, win 502, options [nop,nop,TS val 3540415948 ecr 163547785], length 0
+21:47:10.811086 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 5323, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.50458 > 10.0.2.5.80: Flags [.], cksum 0x183a (incorrect -> 0x3e5d), seq 1, ack 41, win 502, options [nop,nop,TS val 3540415988 ecr 163547785], length 0
+21:47:23.789461 08:00:27:c7:e1:36 > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 64, id 23566, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.4.44564 > 10.0.2.15.8080: Flags [S], cksum 0x1f0b (correct), seq 2627974035, win 64240, options [mss 1460,sackOK,TS val 4280023289 ecr 0,nop,wscale 7], length 0
+21:47:23.789516 08:00:27:1c:d1:63 > 08:00:27:c7:e1:36, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.15.8080 > 10.0.2.4.44564: Flags [S.], cksum 0x1841 (incorrect -> 0x54db), seq 1215354153, ack 2627974036, win 65160, options [mss 1460,sackOK,TS val 1631799209 ecr 4280023289,nop,wscale 7], length 0
+21:47:23.789854 08:00:27:c7:e1:36 > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 23567, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.4.44564 > 10.0.2.15.8080: Flags [.], cksum 0x803a (correct), seq 1, ack 1, win 502, options [nop,nop,TS val 4280023289 ecr 1631799209], length 0
+21:47:23.790033 08:00:27:1c:d1:63 > 08:00:27:c7:e1:36, ethertype IPv4 (0x0800), length 105: (tos 0x0, ttl 64, id 10104, offset 0, flags [DF], proto TCP (6), length 91)
+    10.0.2.15.8080 > 10.0.2.4.44564: Flags [P.], cksum 0x1860 (incorrect -> 0xc28e), seq 1:40, ack 1, win 510, options [nop,nop,TS val 1631799210 ecr 4280023289], length 39: HTTP
+21:47:23.790352 08:00:27:c7:e1:36 > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 23568, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.4.44564 > 10.0.2.15.8080: Flags [.], cksum 0x8011 (correct), seq 1, ack 40, win 502, options [nop,nop,TS val 4280023290 ecr 1631799210], length 0
+21:47:30.208493 08:00:27:c7:e1:36 > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 68: (tos 0x0, ttl 64, id 23569, offset 0, flags [DF], proto TCP (6), length 54)
+    10.0.2.4.44564 > 10.0.2.15.8080: Flags [P.], cksum 0xf2ed (correct), seq 1:3, ack 40, win 502, options [nop,nop,TS val 4280029705 ecr 1631799210], length 2: HTTP
+21:47:30.208584 08:00:27:1c:d1:63 > 08:00:27:c7:e1:36, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 10105, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.8080 > 10.0.2.4.44564: Flags [.], cksum 0x1839 (incorrect -> 0x4de6), seq 40, ack 3, win 510, options [nop,nop,TS val 1631805628 ecr 4280029705], length 0
+21:47:30.208854 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 68: (tos 0x0, ttl 64, id 5324, offset 0, flags [DF], proto TCP (6), length 54)
+    10.0.2.15.50458 > 10.0.2.5.80: Flags [P.], cksum 0x183c (incorrect -> 0x7e82), seq 1:3, ack 41, win 502, options [nop,nop,TS val 3540435386 ecr 163547785], length 2: HTTP
+```

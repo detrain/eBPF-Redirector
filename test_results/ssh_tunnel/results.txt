@@ -1,0 +1,58 @@
+# ssh tunnel
+
+# Process List
+`ps -efH`
+
+```
+root      133169     726  0 09:51 ?        00:00:00     sshd: root@pts/5
+root      133274  133169  0 09:51 pts/5    00:00:00       -bash
+```
+
+# Socket Table
+`ss -pant`
+
+```
+ESTAB        0            0                        10.0.2.15:60636                   10.0.2.5:80           users:(("sshd",pid=133169,fd=7))
+ESTAB        0            0                        10.0.2.15:22                      10.0.2.4:40522        users:(("sshd",pid=133169,fd=4))                                                                         
+```
+
+# rsyslog
+iptables log rule
+```
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+   33  1781 LOG        tcp  --  *      *       10.0.2.4             0.0.0.0/0            LOG flags 0 level 4 prefix "Gotcha"
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 LOG        tcp  --  *      *       10.0.2.4             0.0.0.0/0            LOG flags 0 level 4 prefix "Gotcha"
+```
+
+/var/log/iptables.log
+```
+Apr  7 09:52:26 research kernel: [75813.066579] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=144 TOS=0x10 PREC=0x00 TTL=64 ID=19101 DF PROTO=TCP SPT=40522 DPT=22 WINDOW=501 RES=0x00 ACK PSH URGP=0 
+Apr  7 09:52:26 research kernel: [75813.077966] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=52 TOS=0x10 PREC=0x00 TTL=64 ID=19102 DF PROTO=TCP SPT=40522 DPT=22 WINDOW=501 RES=0x00 ACK URGP=0 
+Apr  7 09:52:29 research kernel: [75816.331193] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=88 TOS=0x10 PREC=0x00 TTL=64 ID=19103 DF PROTO=TCP SPT=40522 DPT=22 WINDOW=501 RES=0x00 ACK PSH URGP=0 
+Apr  7 09:53:07 research kernel: [75854.220629] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=88 TOS=0x10 PREC=0x00 TTL=64 ID=19104 DF PROTO=TCP SPT=40522 DPT=22 WINDOW=501 RES=0x00 ACK PSH URGP=0 
+Apr  7 09:53:07 research kernel: [75854.221515] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=52 TOS=0x10 PREC=0x00 TTL=64 ID=19105 DF PROTO=TCP SPT=40522 DPT=22 WINDOW=501 RES=0x00 ACK URGP=0 
+Apr  7 09:53:08 research kernel: [75854.422801] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=88 TOS=0x10 PREC=0x00 TTL=64 ID=19106 DF PROTO=TCP SPT=40522 DPT=22 WINDOW=501 RES=0x00 ACK PSH URGP=0 
+Apr  7 09:53:08 research kernel: [75854.423617] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=52 TOS=0x10 PREC=0x00 TTL=64 ID=19107 DF PROTO=TCP SPT=40522 DPT=22 WINDOW=501 RES=0x00 ACK URGP=0 
+Apr  7 09:53:08 research kernel: [75854.505435] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=88 TOS=0x10 PREC=0x00 TTL=64 ID=19108 DF PROTO=TCP SPT=40522 DPT=22 WINDOW=501 RES=0x00 ACK PSH URGP=0 
+Apr  7 09:53:08 research kernel: [75854.506356] GotchaIN=enp0s3 OUT= MAC=08:00:27:1c:d1:63:08:00:27:c7:e1:36:08:00 SRC=10.0.2.4 DST=10.0.2.15 LEN=52 TOS=0x10 PREC=0x00 TTL=64 ID=19109 DF PROTO=TCP SPT=40522 DPT=22 WINDOW=501 RES=0x00 ACK URGP=0
+```
+
+# tcpdump
+```
+@research:~$ sudo tcpdump -envvvi enp0s3 tcp port 80 or tcp port 8080
+tcpdump: listening on enp0s3, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+09:52:26.704394 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 64, id 63989, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.15.60636 > 10.0.2.5.80: Flags [S], cksum 0x1842 (incorrect -> 0x65dc), seq 3803820976, win 64240, options [mss 1460,sackOK,TS val 3583931881 ecr 0,nop,wscale 7], length 0
+09:52:26.704782 08:00:27:10:cb:4e > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 60)
+    10.0.2.5.80 > 10.0.2.15.60636: Flags [S.], cksum 0xdc2f (correct), seq 1821344618, ack 3803820977, win 65160, options [mss 1460,sackOK,TS val 207063474 ecr 3583931881,nop,wscale 7], length 0
+09:52:26.704808 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 63990, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.15.60636 > 10.0.2.5.80: Flags [.], cksum 0x183a (incorrect -> 0x078e), seq 1, ack 1, win 502, options [nop,nop,TS val 3583931882 ecr 207063474], length 0
+09:52:29.969040 08:00:27:1c:d1:63 > 08:00:27:10:cb:4e, ethertype IPv4 (0x0800), length 68: (tos 0x0, ttl 64, id 63991, offset 0, flags [DF], proto TCP (6), length 54)
+    10.0.2.15.60636 > 10.0.2.5.80: Flags [P.], cksum 0x183c (incorrect -> 0x99b9), seq 1:3, ack 1, win 502, options [nop,nop,TS val 3583935146 ecr 207063474], length 2: HTTP
+09:52:29.969417 08:00:27:10:cb:4e > 08:00:27:1c:d1:63, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 57861, offset 0, flags [DF], proto TCP (6), length 52)
+    10.0.2.5.80 > 10.0.2.15.60636: Flags [.], cksum 0xee02 (correct), seq 1, ack 3, win 510, options [nop,nop,TS val 207066739 ecr 3583935146], length 0
+```
